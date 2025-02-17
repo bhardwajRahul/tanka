@@ -54,13 +54,13 @@ jobs:
 
       - name: Generate token
         id: generate-token
-        uses: actions/create-github-app-token@136412a57a7081aa63c935a2cc2918f76c34f514 # v1.11.2
+        uses: actions/create-github-app-token@0d564482f06ca65fa9e77e2510873638c82206f2 # v1.11.5
         with:
           app-id: ${{ env.GRAFANA_RENOVATE_APP_ID }}
           private-key: ${{ env.GRAFANA_RENOVATE_PRIVATE_KEY }}
 
       - name: Self-hosted Renovate
-        uses: renovatebot/github-action@9ad1a8e771c002ece340d1ff028fae4503fe041b # v41.0.12
+        uses: renovatebot/github-action@e084b5ac6fd201023db6dd7743aec023babb02c8 # v41.0.13
         with:
           configurationFile: .github/renovate-config.json5
           # renovate: datasource=docker depName=ghcr.io/renovatebot/renovate
