@@ -22,9 +22,15 @@ func (k *Kubernetes) Apply(state manifest.List, opts ApplyOpts) error {
 // AnnoationLastApplied is the last-applied-configuration annotation used by kubectl
 const AnnotationLastApplied = "kubectl.kubernetes.io/last-applied-configuration"
 
+// OrphanedOpts allow to specify additional parameters for finding orphaned resources
+type OrphanedOpts struct {
+	// Namespace limits the search to a single namespace. Empty string searches all namespaces.
+	Namespace string
+}
+
 // Orphaned returns previously created resources that are missing from the
 // local state. It uses UIDs to safely identify objects.
-func (k *Kubernetes) Orphaned(state manifest.List) (manifest.List, error) {
+func (k *Kubernetes) Orphaned(state manifest.List, opts OrphanedOpts) (manifest.List, error) {
 	log.Info().Msg("Finding orphaned resources to prune")
 
 	if !k.Env.Spec.InjectLabels {
@@ -48,11 +54,15 @@ See https://tanka.dev/garbage-collection for more details`)
 
 	var orphaned manifest.List
 
-	// join all kinds that support LIST into a comma separated string for
-	// kubectl
+	// Find all kinds into a comma separated string that should be checked for pruning:
+	// * support LIST operation
+	// * when namespace is set, only consider namespaced resources
 	kinds := ""
 	for _, r := range apiResources {
 		if !strings.Contains(r.Verbs, "list") {
+			continue
+		}
+		if opts.Namespace != "" && !r.Namespaced {
 			continue
 		}
 
@@ -68,7 +78,7 @@ See https://tanka.dev/garbage-collection for more details`)
 	if err != nil {
 		return nil, err
 	}
-	matched, err := k.ctl.GetByLabels("", kinds, map[string]string{
+	matched, err := k.ctl.GetByLabels(opts.Namespace, kinds, map[string]string{
 		process.LabelEnvironment: nameLabel,
 	})
 	if err != nil {
